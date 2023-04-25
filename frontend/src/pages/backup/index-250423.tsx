@@ -4,44 +4,57 @@ import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
 import clsx from 'clsx';
-import 'regenerator-runtime/runtime';
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import annyang from 'annyang';
 
-enum eFrom {
-  user,
-  ai,
+interface vmTranscript {
+  final_transcript: string,
+  interim_transcript: string,
 }
 
-interface IState {
+interface vmState {
   is_listening: boolean,
   is_permission: boolean,
   is_show_sidebar: boolean,
-  data: {
-    text: string;
-    from: eFrom;
-  }[],
+  data: Array<String>,
 }
 
 export default function HomePage() {
+  const [text, setText] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const {
-    transcript, listening,
-    resetTranscript, browserSupportsSpeechRecognition
-  } = useSpeechRecognition();
-  const [state, setState] = useState<IState>({
+  const [transcript, setTransript] = useState<vmTranscript>({
+    final_transcript: "",
+    interim_transcript: "",
+  });
+  const [state, setState] = useState<vmState>({
     is_listening: false,
     is_permission: true,
     is_show_sidebar: true,
     data: [],
   });
 
+
+
   useEffect(() => {
     // onPlayVideo();
 
+    checkPermissions();
   }, []);
 
   useEffect(() => {
+    const speechRecognition = new (window as any).webkitSpeechRecognition();
+    if (state.is_listening) {
+      console.info(state.is_listening);
+      speechRecognition.stop();
 
+      setState(state => ({
+        ...state, data: [
+          ...state.data,
+          transcript.final_transcript,
+        ]
+      }));
+    } else {
+
+    }
   }, [state.is_listening]);
 
   const onPlayVideo = (): void => {
@@ -58,27 +71,77 @@ export default function HomePage() {
   }
 
   const onSpeechRecognitionOn = async (): Promise<void> => {
-    // console.info("start");
+    setState(state => ({ ...state, is_listening: true }));
+    const speechRecognition = new (window as any).webkitSpeechRecognition();
+    speechRecognition.continuous = true;
+    speechRecognition.interimResults = true;
+    speechRecognition.lang = "en-US";
 
-    SpeechRecognition.startListening({
-      continuous: true,
-    });
+    // if (getIsListening) {
+    console.info("start");
+    speechRecognition.start();
+    // }
+
+    speechRecognition.onresult = (event) => {
+
+      // // Loop through the results from the speech recognition object.
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        // If the result item is Final, add it to Final Transcript, Else add it to Interim transcript
+        if (event.results[i].isFinal) {
+          // state.final_transcript += event.results[i][0].transcript;
+          setTransript(transcript => ({
+            ...transcript,
+            final_transcript: transcript.final_transcript += event.results[i][0].transcript,
+          }));
+        } else {
+          // state.interim_transcript += event.results[i][0].transcript;
+          setTransript(transcript => ({
+            ...transcript,
+            interim_transcript: transcript.interim_transcript += event.results[i][0].transcript,
+          }));
+        }
+
+        console.info(transcript.final_transcript, event.results[i][0].transcript);
+      }
+
+    }
+
+
+
   };
 
   const onSpeechRecognitionOff = async (): Promise<void> => {
-    // console.info("stop");
+    console.info("stop");
+    const speechRecognition = new (window as any).webkitSpeechRecognition();
+    speechRecognition.stop();
 
-    setState(state => ({
-      ...state, data: [
-        ...state.data,
-        {
-          text: transcript,
-          from: eFrom.user,
-        },
-      ]
+    setState(state => ({ ...state, is_listening: false }));
+
+    setTransript(transcript => ({
+      ...transcript,
+      final_transcript: "",
     }));
-    resetTranscript();
-    SpeechRecognition.stopListening();
+  }
+
+  const checkPermissions = async (): Promise<void> => {
+    try {
+      const microphonePermission = await navigator.permissions.query({
+        name: "microphone",
+      }).then(item => item);
+      const soundPermission = await navigator.permissions.query({
+        name: "camera",
+      });
+
+      // console.info(microphonePermission.state, soundPermission.state);
+
+      if (microphonePermission.state == "granted" && soundPermission.state == "granted") {
+        setState(state => ({ ...state, is_permission: true }));
+      } else {
+        setState(state => ({ ...state, is_permission: false }));
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }
 
 
@@ -127,6 +190,7 @@ export default function HomePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                     </svg>
                   </span>
+                  {state.is_listening ? 1 : 0}
                   <span
                     onClick={onSpeechRecognitionOn}
                     className={clsx(
@@ -179,26 +243,16 @@ export default function HomePage() {
             <span className="sr-only">Close menu</span>
           </button>
           <div className="py-4 overflow-y-auto">
-            {/*   */}
             <ul className="space-y-2 font-medium">
               {
                 state.data.map((item, index) => (
-                  <>
-                    <li key={index}>
-                      <a href="#" className={clsx(
-                        `${item.from == eFrom.user ? 'justify-end text-right' : ''}`,
-                        "flex text-gray-900",
-                        "dark:text-white dark:hover:bg-gray-700",
-                      )}>
-                        <span className={clsx(
-                          "ml-3 rounded-lg p-2",
-                          `${item.from == eFrom.user ? ' bg-[#F0C8B3]' : 'bg-[#C6C3BE]'}`,
-                        )}>
-                          {item.text}
-                        </span>
-                      </a>
-                    </li>
-                  </>
+                  <li key={index}>
+                    <a href="#" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <span className="ml-3">
+                        {item}
+                      </span>
+                    </a>
+                  </li>
                 ))
               }
             </ul>

@@ -23,7 +23,10 @@
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-icons": "^4.8.0",
-        "tailwind-merge": "^1.12.0"
+        "react-speech-recognition": "^3.10.0",
+        "regenerator-runtime": "^0.13.11",
+        "tailwind-merge": "^1.12.0",
+        "web-speech-recognition": "^0.7.2"
     },
     "devDependencies": {
         "@commitlint/cli": "^16.3.0",
@@ -33,6 +36,7 @@
         "@testing-library/jest-dom": "^5.16.5",
         "@testing-library/react": "^13.4.0",
         "@types/react": "^18.0.35",
+        "@types/react-speech-recognition": "^3.9.2",
         "@typescript-eslint/eslint-plugin": "^5.58.0",
         "@typescript-eslint/parser": "^5.58.0",
         "autoprefixer": "^10.4.14",

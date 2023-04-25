@@ -1,1 +1,2 @@
 https://github.com/theodorusclarence/ts-nextjs-tailwind-starter
+https://blog.logrocket.com/using-the-react-speech-recognition-hook-for-voice-assistance/
