@@ -1,37 +1,29 @@
 import { useRef, useEffect, useState } from 'react';
 
-import Layout from '@/components/layout/Layout';
-import Seo from '@/components/Seo';
-
 import clsx from 'clsx';
+import axios from 'axios';
+import moment from 'moment';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
-enum eFrom {
-  user,
-  ai,
-}
+import Seo from '@/components/Seo';
+import Layout from '@/components/layout/Layout';
 
-interface IState {
-  is_listening: boolean,
-  is_permission: boolean,
-  is_show_sidebar: boolean,
-  data: {
-    text: string;
-    from: eFrom;
-  }[],
-}
+import {
+  IState, EFrom, IResponse
+} from "@/types/index";
 
 export default function HomePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const {
-    transcript, listening,
-    resetTranscript, browserSupportsSpeechRecognition
+    transcript, listening, resetTranscript
   } = useSpeechRecognition();
   const [state, setState] = useState<IState>({
     is_listening: false,
     is_permission: true,
-    is_show_sidebar: true,
+    is_show_sidebar: false,
+    src_video: "/videos/ai.mp4",
     data: [],
   });
 
@@ -40,9 +32,14 @@ export default function HomePage() {
 
   }, []);
 
+  // scroll to the bottom of the chat when new messages are added
   useEffect(() => {
-
-  }, [state.is_listening]);
+    if (chatEndRef.current) {
+      // console.info("scroll");
+      // chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [state.data]);
 
   const onPlayVideo = (): void => {
     const video = videoRef.current;
@@ -53,12 +50,26 @@ export default function HomePage() {
     }
   }
 
-  const onSideBar = (): void => {
-    setState(state => ({ ...state, is_show_sidebar: !state.is_show_sidebar }));
+  const onSideBar = (value?: boolean): void => {
+    let setValue: boolean = false;
+
+    if (value != undefined) {
+      setValue = value;
+    } else {
+      setValue = !state.is_show_sidebar;
+    }
+
+    // console.info(setValue);
+
+    setState(state => ({ ...state, is_show_sidebar: setValue }));
   }
 
   const onSpeechRecognitionOn = async (): Promise<void> => {
     // console.info("start");
+
+    // console.info(transcript);
+
+    setState(state => ({ ...state, is_listening: true }));
 
     SpeechRecognition.startListening({
       continuous: true,
@@ -68,26 +79,61 @@ export default function HomePage() {
   const onSpeechRecognitionOff = async (): Promise<void> => {
     // console.info("stop");
 
-    setState(state => ({
-      ...state, data: [
-        ...state.data,
-        {
-          text: transcript,
-          from: eFrom.user,
-        },
-      ]
-    }));
+    setState(state => ({ ...state, is_listening: false }));
+
+    // console.info(transcript);
+
+    if (transcript != "") {
+      setState(state => ({
+        ...state, data: [
+          ...state.data,
+          {
+            text: transcript,
+            from: EFrom.USER,
+          },
+        ]
+      }));
+    }
+
+    sendData();
+
     resetTranscript();
     SpeechRecognition.stopListening();
   }
 
+  const sendData = async (): Promise<void> => {
+    let message: string = "";
+
+    // message = transcript;
+    message = "Hi, doctor. To be honest, I'm feeling quite stressed lately";
+
+    if (message == "") {
+      return;
+    }
+
+    // console.info(message);
+
+    try {
+      const getStream: string = await axios.get(`/api/did`, { params: { message: message } })
+        .then(result => result.data);
+
+      console.info(getStream);
+
+      // onPlayVideo();
+
+    } catch (error) {
+      // alert(error);
+
+      console.info(error);
+    }
+  }
 
   return (
     <Layout>
       {/* <Seo templateTitle='Home' /> */}
       <Seo templateTitle="test" />
 
-      <main>
+      <main >
         <section
           style={{
             backgroundImage: "url('/images/bg2.jpg')",
@@ -107,17 +153,17 @@ export default function HomePage() {
                 {/* clsx */}
                 <video
                   ref={videoRef}
+                  src={state.src_video}
                   className={clsx(
                     "flex justify-center items-center",
                     "h-80 w-80 rounded-full bg-gray-200 shadow-2xl",
                   )}>
-                  <source src="/videos/ai.mp4" type="video/mp4" />
                 </video>
                 <div
                   className="flex flex-row space-x-4 max-h-10"
                 >
                   <span
-                    onClick={onSideBar}
+                    onClick={event => onSideBar()}
                     className={clsx(
                       "w-8 h-8 m-2 hover:w-10 hover:h-10 hover:shadow-2xl",
                       "bg-white rounded-full  flex flex-row justify-around p-2",
@@ -128,27 +174,35 @@ export default function HomePage() {
                     </svg>
                   </span>
                   <span
-                    onClick={onSpeechRecognitionOn}
+                    onClick={state.is_listening ? onSpeechRecognitionOff : onSpeechRecognitionOn}
                     className={clsx(
                       "w-8 h-8 m-2 hover:w-10 hover:h-10 hover:shadow-2xl",
                       "bg-white rounded-full flex flex-row justify-around p-2",
                     )}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className=" cursor-pointer">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                    </svg>
+                    {
+                      state.is_listening
+                        ? (
+                          <svg
+                            className="cursor-pointer"
+                            style={{
+                              verticalAlign: "middle",
+                              fill: "currentColor",
+                              overflow: "hidden"
+                            }}
+                            viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M835.7 279.5L664.1 451.2v60.9c0 41.8-14.9 77.7-44.7 107.5-29.8 29.8-65.6 44.7-107.5 44.7-17.4 0-34.7-3-51.8-9L414.5 701c30.7 16.2 63.2 24.2 97.5 24.2 58.6 0 108.8-20.8 150.5-62.5 41.6-41.8 62.4-91.9 62.4-150.6v-60.9c0-8.2 3-15.4 9-21.4s13.1-9 21.4-9c8.2 0 15.4 3 21.4 9s9 13.2 9 21.4V512c0 70.1-23.4 131-70.1 182.8-46.7 51.9-104.5 81.6-173.3 89.2v62.7H664c8.2 0 15.4 3 21.4 9s9 13.1 9 21.4c0 8.2-3 15.4-9 21.4s-13.2 9-21.4 9H359.7c-8.2 0-15.4-3-21.4-9s-9-13.2-9-21.4 3-15.4 9-21.4 13.1-9 21.4-9h121.7V784c-39.6-4.1-76.9-17-111.7-38.5L249 866.3c-3.2 3.2-6.8 4.8-10.9 4.8-4.1 0-7.8-1.6-10.9-4.8l-39-39c-3.2-3.2-4.8-6.8-4.8-10.9 0-4.1 1.6-7.8 4.8-10.9l586.7-586.7c3.2-3.2 6.8-4.8 10.9-4.8 4.1 0 7.8 1.6 10.9 4.8l39 39c3.2 3.2 4.8 6.8 4.8 10.9-0.1 4-1.6 7.6-4.8 10.8zM306 565.8l-48 48c-13.3-32.6-20-66.6-20-101.8v-61c0-8.2 3-15.4 9-21.4s13.1-9 21.4-9c8.2 0 15.4 3 21.4 9s9 13.2 9 21.4v60.9c0.1 16.9 2.5 34.9 7.2 53.9z m349-349.1L359.7 512V268.6c0-41.8 14.9-77.7 44.7-107.5 29.8-29.8 65.6-44.7 107.5-44.7 32.3 0 61.6 9.4 87.7 28.1 26.2 18.7 44.6 42.8 55.4 72.2z" />
+                          </svg>
+                        ) :
+                        (
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className=" cursor-pointer">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                          </svg>
+                        )
+                    }
+
                   </span>
-                  <span
-                    onClick={onSpeechRecognitionOff}
-                    className={clsx(
-                      "w-8 h-8 m-2 hover:w-10 hover:h-10 hover:shadow-2xl",
-                      "bg-white rounded-full flex flex-row justify-around p-2",
-                    )}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className=" cursor-pointer">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                    </svg>
-                  </span>
+
                 </div>
               </div>
 
@@ -156,6 +210,7 @@ export default function HomePage() {
           </div>
           <div className=" w-full hidden md:block"></div>
         </section>
+        {/* start left side bar conversation */}
         <div
           id="drawer-navigation"
           className={clsx(
@@ -166,7 +221,7 @@ export default function HomePage() {
           tabIndex={-1} aria-labelledby="drawer-navigation-label">
           <h5 id="drawer-navigation-label" className="text-base font-semibold text-gray-500 uppercase dark:text-gray-400">Conversation</h5>
           <button
-            onClick={onSideBar}
+            onClick={event => onSideBar()}
             type="button"
             data-drawer-hide="drawer-navigation"
             aria-controls="drawer-navigation"
@@ -178,33 +233,32 @@ export default function HomePage() {
             <svg aria-hidden="true" className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path></svg>
             <span className="sr-only">Close menu</span>
           </button>
-          <div className="py-4 overflow-y-auto">
+          <div className="py-4" >
             {/*   */}
-            <ul className="space-y-2 font-medium">
+            <ul className="space-y-2 overflow-y-auto" >
               {
                 state.data.map((item, index) => (
-                  <>
-                    <li key={index}>
-                      <a href="#" className={clsx(
-                        `${item.from == eFrom.user ? 'justify-end text-right' : ''}`,
-                        "flex text-gray-900",
-                        "dark:text-white dark:hover:bg-gray-700",
+                  <li key={index}>
+                    <div className={clsx(
+                      `${item.from == EFrom.USER ? 'justify-end text-right' : ''}`,
+                      "flex text-gray-900",
+                      "dark:text-white dark:hover:bg-gray-700",
+                    )}>
+                      <span className={clsx(
+                        "ml-3 rounded-lg p-2",
+                        `${item.from == EFrom.USER ? ' bg-[#F0C8B3]' : 'bg-[#C6C3BE]'}`,
                       )}>
-                        <span className={clsx(
-                          "ml-3 rounded-lg p-2",
-                          `${item.from == eFrom.user ? ' bg-[#F0C8B3]' : 'bg-[#C6C3BE]'}`,
-                        )}>
-                          {item.text}
-                        </span>
-                      </a>
-                    </li>
-                  </>
+                        {item.text}
+                      </span>
+                    </div>
+                  </li>
                 ))
               }
+              <div ref={chatEndRef}></div>
             </ul>
           </div>
         </div>
-
+        {/* end left side bar conversation */}
       </main>
     </Layout>
   );
