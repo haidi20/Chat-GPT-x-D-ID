@@ -1,20 +1,22 @@
 export enum EType {
+  INSERT_OFFER,
   INSERT_STREAM_ID,
   INSERT_SESSION_ID,
-}
-
-export interface IOffer {
-  type: string,
-  sdp: string,
+  INSERT_ICE_SERVERS,
 }
 
 export interface IState {
   streamId?: string,
   id?: string,
-  offer?: string,
-  iceServers?: string,
+  offer?: RTCSessionDescriptionInit,
+  iceServers?: RTCIceServer[],
   session_id?: string,
   result_url?: string,
+}
+
+export interface IOffer {
+  type?: string,
+  sdp?: string,
 }
 
 export interface IResponse {
@@ -22,6 +24,6 @@ export interface IResponse {
 }
 
 export interface TAction {
-  type: EType,
-  payload: IState,
+  type: string,
+  payload: any,
 }

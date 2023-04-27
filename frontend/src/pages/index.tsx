@@ -1,132 +1,30 @@
+import clsx from 'clsx';
 import { useRef, useEffect, useState } from 'react';
 
-import clsx from 'clsx';
-import axios from 'axios';
-import moment from 'moment';
-import 'regenerator-runtime/runtime';
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import { EFrom } from '@/types';
+import useDid from '@/hooks/useDid';
+import useWebRTC from '@/hooks/useWebRTC';
 
 import Seo from '@/components/Seo';
 import Layout from '@/components/layout/Layout';
 
-import {
-  IState, EFrom, IResponse
-} from "@/types/index";
-
 export default function HomePage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+
   const {
-    transcript, listening, resetTranscript
-  } = useSpeechRecognition();
-  const [state, setState] = useState<IState>({
-    is_listening: false,
-    is_permission: true,
-    is_show_sidebar: false,
-    src_video: "/videos/ai.mp4",
-    data: [],
-  });
+    // state and useRef
+    state: stateDid, videoRef, chatEndRef,
+    // functions
+    onSideBar, onSpeechRecognitionOff, onSpeechRecognitionOn
+  } = useDid();
+
+  const {
+    state: stateWebRTC
+  } = useWebRTC();
 
   useEffect(() => {
-    // onPlayVideo();
-
+    // console.info(stateWebRTC.offer);
   }, []);
 
-  // scroll to the bottom of the chat when new messages are added
-  useEffect(() => {
-    if (chatEndRef.current) {
-      // console.info("scroll");
-      // chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [state.data]);
-
-  const onPlayVideo = (): void => {
-    const video = videoRef.current;
-    if (video) {
-      video.play().catch(error => {
-        console.error('Failed to autoplay video:', error);
-      });
-    }
-  }
-
-  const onSideBar = (value?: boolean): void => {
-    let setValue: boolean = false;
-
-    if (value != undefined) {
-      setValue = value;
-    } else {
-      setValue = !state.is_show_sidebar;
-    }
-
-    // console.info(setValue);
-
-    setState(state => ({ ...state, is_show_sidebar: setValue }));
-  }
-
-  const onSpeechRecognitionOn = async (): Promise<void> => {
-    // console.info("start");
-
-    // console.info(transcript);
-
-    setState(state => ({ ...state, is_listening: true }));
-
-    SpeechRecognition.startListening({
-      continuous: true,
-    });
-  };
-
-  const onSpeechRecognitionOff = async (): Promise<void> => {
-    // console.info("stop");
-
-    setState(state => ({ ...state, is_listening: false }));
-
-    // console.info(transcript);
-
-    if (transcript != "") {
-      setState(state => ({
-        ...state, data: [
-          ...state.data,
-          {
-            text: transcript,
-            from: EFrom.USER,
-          },
-        ]
-      }));
-    }
-
-    sendData();
-
-    resetTranscript();
-    SpeechRecognition.stopListening();
-  }
-
-  const sendData = async (): Promise<void> => {
-    let message: string = "";
-
-    // message = transcript;
-    message = "Hi, doctor. To be honest, I'm feeling quite stressed lately";
-
-    if (message == "") {
-      return;
-    }
-
-    // console.info(message);
-
-    try {
-      const getStream: string = await axios.get(`/api/did`, { params: { message: message } })
-        .then(result => result.data);
-
-      console.info(getStream);
-
-      // onPlayVideo();
-
-    } catch (error) {
-      // alert(error);
-
-      console.info(error);
-    }
-  }
 
   return (
     <Layout>
@@ -153,7 +51,7 @@ export default function HomePage() {
                 {/* clsx */}
                 <video
                   ref={videoRef}
-                  src={state.src_video}
+                  src={stateDid.src_video}
                   className={clsx(
                     "flex justify-center items-center",
                     "h-80 w-80 rounded-full bg-gray-200 shadow-2xl",
@@ -174,14 +72,14 @@ export default function HomePage() {
                     </svg>
                   </span>
                   <span
-                    onClick={state.is_listening ? onSpeechRecognitionOff : onSpeechRecognitionOn}
+                    onClick={stateDid.is_listening ? onSpeechRecognitionOff : onSpeechRecognitionOn}
                     className={clsx(
                       "w-8 h-8 m-2 hover:w-10 hover:h-10 hover:shadow-2xl",
                       "bg-white rounded-full flex flex-row justify-around p-2",
                     )}
                   >
                     {
-                      state.is_listening
+                      stateDid.is_listening
                         ? (
                           <svg
                             className="cursor-pointer"
@@ -216,7 +114,7 @@ export default function HomePage() {
           className={clsx(
             "border-r-2 border-gray-200",
             "bg-white dark:bg-gray-800 fixed top-0 left-0 z-40 w-64 md:w-96 h-screen p-4",
-            `${state.is_show_sidebar ? '-translate-x-0' : '-translate-x-full'} overflow-y-auto transition-transform`,
+            `${stateDid.is_show_sidebar ? '-translate-x-0' : '-translate-x-full'} overflow-y-auto transition-transform`,
           )}
           tabIndex={-1} aria-labelledby="drawer-navigation-label">
           <h5 id="drawer-navigation-label" className="text-base font-semibold text-gray-500 uppercase dark:text-gray-400">Conversation</h5>
@@ -237,7 +135,7 @@ export default function HomePage() {
             {/*   */}
             <ul className="space-y-2 overflow-y-auto" >
               {
-                state.data.map((item, index) => (
+                stateDid.data.map((item, index) => (
                   <li key={index}>
                     <div className={clsx(
                       `${item.from == EFrom.USER ? 'justify-end text-right' : ''}`,
