@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useReducer } from 'react';
 
-import { IState, EType, IOffer, IResponse, TAction } from "@/types/didType";
+import { IState, EType, IResponse, TAction } from "@/types/didType";
 
 const initialState: IState = {
   streamId: "",
