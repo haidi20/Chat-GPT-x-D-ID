@@ -4,7 +4,6 @@ import Layout from '@/components/layout/Layout';
 import Seo from '@/components/Seo';
 
 import clsx from 'clsx';
-import annyang from 'annyang';
 
 interface vmTranscript {
   final_transcript: string,

@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import { useRef, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { EFrom } from '@/types';
 import useDid from '@/hooks/useDid';
-import useWebRTC from '@/hooks/useWebRTC';
+// import useWebRTC from '@/hooks/useWebRTC';
 
 import Seo from '@/components/Seo';
 import Layout from '@/components/layout/Layout';
@@ -17,9 +17,9 @@ export default function HomePage() {
     onSideBar, onSpeechRecognitionOff, onSpeechRecognitionOn
   } = useDid();
 
-  const {
-    state: stateWebRTC
-  } = useWebRTC();
+  // const {
+  //   state: stateWebRTC
+  // } = useWebRTC();
 
   useEffect(() => {
     // console.info(stateWebRTC.offer);
@@ -59,9 +59,9 @@ export default function HomePage() {
                 </video>
                 <div
                   className="flex flex-row space-x-4 max-h-10"
-                >
+                >``
                   <span
-                    onClick={event => onSideBar()}
+                    onClick={() => onSideBar()}
                     className={clsx(
                       "w-8 h-8 m-2 hover:w-10 hover:h-10 hover:shadow-2xl",
                       "bg-white rounded-full  flex flex-row justify-around p-2",
@@ -119,7 +119,7 @@ export default function HomePage() {
           tabIndex={-1} aria-labelledby="drawer-navigation-label">
           <h5 id="drawer-navigation-label" className="text-base font-semibold text-gray-500 uppercase dark:text-gray-400">Conversation</h5>
           <button
-            onClick={event => onSideBar()}
+            onClick={() => onSideBar()}
             type="button"
             data-drawer-hide="drawer-navigation"
             aria-controls="drawer-navigation"

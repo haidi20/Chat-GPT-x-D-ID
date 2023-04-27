@@ -1,7 +1,7 @@
 import axios from 'axios';
-import React, { useReducer } from 'react';
+import { useReducer } from 'react';
 
-import { IState, EType, IOffer, IResponse, TAction } from "@/types/didType";
+import { IState, IResponse, TAction } from "@/types/didType";
 
 const initialState: IState = {
   streamId: "",
@@ -39,11 +39,11 @@ const reducer = (state: IState, action: TAction) => {
 
 export default function useWebRTC() {
   let peerConnection: RTCPeerConnection;
-  let sessionClientAnswer: RTCSessionDescriptionInit;
+  let _sessionClientAnswer: RTCSessionDescriptionInit;
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const onConnectStream = async (): Promise<any> => {
+  const _onConnectStream = async (): Promise<any> => {
     let getSdpResponse = null;
     const token = process.env.TOKEN;
 
@@ -88,7 +88,7 @@ export default function useWebRTC() {
 
   const onSdpResponse = async (): Promise<any> => {
     try {
-      sessionClientAnswer = await createPeerConnection();
+      _sessionClientAnswer = await createPeerConnection();
     } catch (e) {
       console.log('error during streaming setup', e);
       // stopAllStreams();
@@ -104,7 +104,7 @@ export default function useWebRTC() {
     //   {
     //     method: 'POST',
     //     headers: { Authorization: `Basic ${DID_API.key}`, 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ answer: sessionClientAnswer, session_id: sessionId })
+    //     body: JSON.stringify({ answer: _sessionClientAnswer, session_id: sessionId })
     //   });
   }
 
@@ -130,16 +130,16 @@ export default function useWebRTC() {
       console.log('set remote sdp OK');
     }
 
-    const sessionClientAnswer = await peerConnection.createAnswer();
+    const _sessionClientAnswer = await peerConnection.createAnswer();
     console.log('create local sdp OK');
 
-    await peerConnection.setLocalDescription(sessionClientAnswer);
+    await peerConnection.setLocalDescription(_sessionClientAnswer);
     console.log('set local sdp OK');
 
-    return sessionClientAnswer;
+    return _sessionClientAnswer;
   }
 
-  const findVideo = async (text: string | null): Promise<any> => {
+  const _findVideo = async (text: string | null): Promise<any> => {
 
     if (text == null) {
       return;
@@ -187,7 +187,7 @@ export default function useWebRTC() {
     }
   }
 
-  const getBasaeUrl = (): string => {
+  const _getBasaeUrl = (): string => {
     let baseUrl = "";
 
     if (process.env.NODE_ENV == "development") {
@@ -202,11 +202,11 @@ export default function useWebRTC() {
   }
 
   const onIceCandidate = (event: RTCPeerConnectionIceEvent) => {
-    const token = process.env.TOKEN;
+    const _token = process.env.TOKEN;
     // console.log('onIceCandidate', event);
 
     if (event.candidate) {
-      const { candidate, sdpMid, sdpMLineIndex } = event.candidate;
+      // const { candidate, sdpMid, sdpMLineIndex } = event.candidate;
 
       // fetch(`https://api.d-id.com//talks/streams/${state.streamId}/ice`,
       //   {
@@ -234,7 +234,7 @@ export default function useWebRTC() {
   }
 
   const onTrack = (event: RTCTrackEvent) => {
-    const remoteStream = event.streams[0];
+    const _remoteStream = event.streams[0];
     // setVideoElement(remoteStream);
   }
 

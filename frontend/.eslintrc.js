@@ -17,7 +17,10 @@ module.exports = {
     'no-console': 'warn',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     'react/no-unescaped-entities': 'off',
-
+    "@typescript-eslint/no-explicit-any": "off",
+    "importOrder": ["^components/(.*)$", "^[./]"],
+    "importOrderSeparation": true,
+    "importOrderSortSpecifiers": true,
     'react/display-name': 'off',
     'react/jsx-curly-brace-presence': [
       'warn',
@@ -26,6 +29,7 @@ module.exports = {
 
     //#region  //*=========== Unused Import ===========
     '@typescript-eslint/no-unused-vars': 'off',
+    // 'unused-imports/no-unused-imports': 'warn',
     'unused-imports/no-unused-imports': 'warn',
     'unused-imports/no-unused-vars': [
       'warn',
@@ -76,6 +80,7 @@ module.exports = {
       },
     ],
     //#endregion  //*======== Import Sort ===========
+    "@next/next/no-page-custom-font": "off",
   },
   globals: {
     React: true,
